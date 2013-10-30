@@ -1,0 +1,153 @@
+#include <iostream>
+#include <ctime>
+#include <iomanip>
+#include <Windows.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string>
+using namespace std;
+
+const int S = 150000;
+const int MAXRANDNUMBER = 10;
+const int MINRANDNUMBER = 1;
+
+int *array = new int[S];
+int *arrayleft = new int[S/2];
+int *arrayright = new int[S/2];
+
+void fillArray(int a[]);
+void printArray(int a[],int s,int e);
+void copyArray(int a[],int b[],int size);
+void splitArray(int a[],int a1[],int a2[]);
+int kolik_ms( LPFILETIME pred, LPFILETIME po );
+void bubbleSort(int * array, int size);
+
+
+DWORD WINAPI run( LPVOID arg)
+{
+	cout<<"Start thread 1"<<endl;
+	bubbleSort(arrayleft,S/2);
+	cout<<"End threat 2"<<endl;
+	return 0;
+}
+DWORD WINAPI run2( LPVOID arg)
+{
+	cout << "Start thread 2"<<endl;
+	bubbleSort(arrayright,S/2);
+	cout << "End thread 2"<<endl;
+	return 0;
+}
+DWORD WINAPI run3( LPVOID arg)
+{
+	cout << "Start thread 3"<<endl;
+	bubbleSort(array,S);
+	cout << "End thread 3"<<endl;
+	return 0;
+}
+
+
+HANDLE WINAPI CreateThread(
+	LPSECURITY_ATTRIBUTES lpThreadAttributes,
+	SIZE_T dwStackSize,
+	LPTHREAD_START_ROUTINE lpStartAddress,
+	LPVOID lpParameter,
+	DWORD dwCreationFlags,
+	LPDWORD lpThreadId );
+
+DWORD WINAPI WaitForSingleObject(HANDLE hHandle,DWORD dwMilliseconds );
+
+
+int main()
+{
+	srand(time(0));
+	fillArray(array);
+	//printArray(array,0,S);
+	FILETIME time1,time2;
+	int ti1 = GetTickCount();
+	GetSystemTimeAsFileTime(&time1);
+	splitArray(array,arrayleft,arrayright);
+
+	HANDLE t1 = CreateThread(0,0,run,0,0,0);
+	HANDLE t2 = CreateThread(0,0,run2,0,0,0);
+	WaitForSingleObject(t1,INFINITE);
+	WaitForSingleObject(t2,INFINITE);
+
+	GetSystemTimeAsFileTime(&time2);
+	int ti2 = GetTickCount();
+	int t = kolik_ms(&time1,&time2);
+	int ti3 = ti2 - ti1;
+	cout << t<< endl;
+	cout << ti3<< endl;
+
+	int k1 = GetTickCount();
+	HANDLE t3 = CreateThread(0,0,run3,0,0,0);
+	WaitForSingleObject(t3,INFINITE);
+	int k2 = GetTickCount();
+	int k3 = k2-k1;
+	cout<<k3<<endl;
+	/*printArray(arrayleft,0,S/2);
+	printArray(arrayright,0,S/2);*/
+	return 0;
+}
+void fillArray(int a[])
+{
+	for (int i = 0; i < S; i++)
+	{
+		a[i] = rand() % (MAXRANDNUMBER - MINRANDNUMBER) + MINRANDNUMBER;
+	}
+}
+void printArray(int a[],int s,int e)
+{
+	for(int i = s; i < e; i++)
+	{
+		cout << a[i] << " ";
+	}
+	cout << endl;
+}
+void splitArray(int a[],int a1[],int a2[])
+{
+	int size = S/2;
+		
+	for(int i = 0; i < size; i++)
+		a1[i] = a[i];
+
+	for(int j = S/2; j < S; j++)
+		a2[j-size] = a[j];
+	
+
+}
+void copyArray(int a[],int b[],int size)
+{
+	for(int i = 0; i < size;i++)
+	{
+		b[i] = a[i];
+	}
+}
+
+
+
+int kolik_ms( LPFILETIME pred, LPFILETIME po )
+{
+   hyper pred64b = pred->dwHighDateTime;
+   pred64b = ( pred64b << 32 ) | pred->dwLowDateTime;
+   hyper po64b = po->dwHighDateTime;
+   po64b = ( po64b << 32 ) | po->dwLowDateTime;
+   // konverze 100ns -> 1ms
+   return ( int ) ( ( po64b - pred64b ) / 10000 );
+}
+
+
+
+void bubbleSort(int * array, int size)
+{
+    for(int i = 0; i < size - 1; i++){
+        for(int j = 0; j < size - i - 1; j++){
+            if(array[j+1] < array[j]){
+                int tmp = array[j + 1];
+                array[j + 1] = array[j];
+                array[j] = tmp;
+            }   
+        }   
+    }   
+}    
+            
